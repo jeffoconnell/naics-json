@@ -25,27 +25,49 @@ def parse_args(argv):
   args = parser.parse_args(argv)
   return args
 
+def buildCodeKeyArray(origCode):
+  #careful, some keys are stupid bullshit ranges ' - '
+  #attempt to split the key on the delimeter '-'
+  keysArray = origCode.split("-")
+  #if there is more than one value, create the range.
+  if len(keysArray) > 1:
+    #convert to integers
+    strKeys = list(map(int, keysArray))
+    #create the numeric range
+    keyRange = list(range(strKeys[0], strKeys[1]))
+    #range lops off the end, so put it back
+    keyRange.append(strKeys[1])
+    #convert back to array of strings
+    keysArray = list(map(str, keyRange))
+
+  return keysArray
+
 
 def insertRow(currentRow, codes):
   inserted = False
   currentKey = currentRow['Code']
-  #Are there subcodes for codes?
+
+  #Are there subcodes for this NAICS code?
   if 'subCodes' in codes and codes['subCodes']:
     subCodes = codes['subCodes']
     #loop through and see if there is a matching prefix key
     thekeys = subCodes.keys()
     if len(thekeys) > 0:
       for key in thekeys:
-        if currentKey.startswith(key):
-          #child of this key, recurse
-          insertRow(currentRow, subCodes[key])
-          inserted = True
+        keyArray = buildCodeKeyArray(key)
+        #since the key could be a range, you need to check them all
+        for theKey in keyArray:
+          if currentKey.startswith(theKey):
+            #child of this key, recurse
+            insertRow(currentRow, subCodes[key])
+            inserted = True
+
   else:
     codes['subCodes'] = {}
     subCodes = codes['subCodes']
 
   if not inserted:
-    subCodes[currentKey] = currentRow
+    subCodes[currentRow['Code']] = currentRow
 
 
 def main(argv):
@@ -57,6 +79,8 @@ def main(argv):
   """
   args = parse_args(argv)
   nPath = Path(args.input).resolve()
+  #print (sys.getrecursionlimit())
+  #sys.setrecursionlimit(1500)
   with open(nPath) as naicsFile:
     reader = csv.DictReader(naicsFile, delimiter=',')
 

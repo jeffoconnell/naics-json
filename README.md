@@ -13,7 +13,7 @@ python3 naicsToJson.py --in ./naics.csv --out test.json
 ```
 
 #### To stdout
-There are two arguments --in (the csv file) and --out (your new json file)
+There is one arguments --in (the csv file)
 
 ```bash
 python3 naicsToJson.py --in ./naics.csv
