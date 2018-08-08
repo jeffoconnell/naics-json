@@ -12,6 +12,32 @@ import os
 import sys
 from pathlib import Path
 
+
+class NaicsCode(object):
+  """docstring for NaicsCode"""
+  def __init__(self, row):
+    super().__init__()
+    self.seq = row['Seq']
+    self.code = row['Code']
+    self.title = row['Title']
+    self.subCodes = []
+  def get_json_state(self):
+    return {
+            "code": self.code,
+            "title": self.title,
+            "seq": self.seq,
+            "subCodes": self.subCodes }
+    #[self.seq, self.code, self.title, self.subCodes]
+
+class NaicsEncoder(json.JSONEncoder):
+  def default(self, obj):
+    if isinstance(obj, NaicsCode):
+      return obj.get_json_state()
+    else:
+      return json.JSONEncoder.default(self, obj)
+
+
+
 def parse_args(argv):
   """parse_args
 
@@ -45,29 +71,20 @@ def buildCodeKeyArray(origCode):
 
 def insertRow(currentRow, codes):
   inserted = False
-  currentKey = currentRow['Code']
 
-  #Are there subcodes for this NAICS code?
-  if 'subCodes' in codes and codes['subCodes']:
-    subCodes = codes['subCodes']
-    #loop through and see if there is a matching prefix key
-    thekeys = subCodes.keys()
-    if len(thekeys) > 0:
-      for key in thekeys:
-        keyArray = buildCodeKeyArray(key)
-        #since the key could be a range, you need to check them all
-        for theKey in keyArray:
-          if currentKey.startswith(theKey):
-            #child of this key, recurse
-            insertRow(currentRow, subCodes[key])
-            inserted = True
-
-  else:
-    codes['subCodes'] = {}
-    subCodes = codes['subCodes']
+  #loop through and see if there is a matching prefix key
+  for row in codes:
+    keyArray = buildCodeKeyArray(row.code)
+    #since the key could be a range, you need to check them all
+    for theKey in keyArray:
+      if currentRow.code.startswith(theKey):
+        #child of this key, recurse
+        insertRow(currentRow, row.subCodes)
+        inserted = True
 
   if not inserted:
-    subCodes[currentRow['Code']] = currentRow
+    #subCodes[currentRow['Code']] = currentRow
+    codes.append(currentRow)
 
 
 def main(argv):
@@ -84,15 +101,19 @@ def main(argv):
   with open(nPath) as naicsFile:
     reader = csv.DictReader(naicsFile, delimiter=',')
 
-    codes = {"subCodes": {}}
+    codes = []
     for row in reader:
-      insertRow(row, codes)
+      theRow = NaicsCode(row)
+
+      #print (json.dumps(theRow, cls=NaicsEncoder))
+
+      insertRow(theRow, codes)
 
   if args.output:
     with open(args.output, 'w') as fp:
-      json.dump(codes, fp)
+      json.dump(codes, fp, cls=NaicsEncoder)
   else:
-    print (json.dumps(codes))
+    print (json.dumps(codes, cls=NaicsEncoder))
 
 if __name__ == '__main__':
     main(sys.argv[1:])
