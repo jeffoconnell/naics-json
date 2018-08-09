@@ -24,9 +24,9 @@ class NaicsCode(object):
   def get_json_state(self):
     return {
             "code": self.code,
-            "title": self.title,
-            "seq": self.seq,
-            "subCodes": self.subCodes }
+            "name": self.title,
+            "id": int(self.seq),
+            "children": self.subCodes }
     #[self.seq, self.code, self.title, self.subCodes]
 
 class NaicsEncoder(json.JSONEncoder):
