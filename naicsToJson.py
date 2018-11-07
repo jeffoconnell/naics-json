@@ -78,9 +78,12 @@ def insertRow(currentRow, codes):
     #since the key could be a range, you need to check them all
     for theKey in keyArray:
       if currentRow.code.startswith(theKey):
-        #child of this key, recurse
-        insertRow(currentRow, row.subCodes)
-        inserted = True
+        if currentRow.title == row.title:   
+            inserted = True   # child has same name as parent. Let's skip and use wildcards to do matching.
+        else:   
+            #child of this key, recurse
+            insertRow(currentRow, row.subCodes)
+            inserted = True
 
   if not inserted:
     #subCodes[currentRow['Code']] = currentRow
